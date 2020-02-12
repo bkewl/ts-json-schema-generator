@@ -12,6 +12,7 @@ export class ExtendedAnnotationsReader extends BasicAnnotationsReader {
         const annotations: Annotations = {
             ...this.getDescriptionAnnotation(node),
             ...this.getTypeAnnotation(node),
+            ...this.getExampleAnnotation(node),
             ...super.getAnnotations(node),
         };
         return Object.keys(annotations).length ? annotations : undefined;
@@ -30,6 +31,22 @@ export class ExtendedAnnotationsReader extends BasicAnnotationsReader {
 
         const jsDocTag: ts.JSDocTagInfo | undefined = jsDocTags.find((tag: ts.JSDocTagInfo) => tag.name === "nullable");
         return !!jsDocTag;
+    }
+
+    private getExampleAnnotation(node: ts.Node): Annotations | undefined {
+        const symbol = symbolAtNode(node);
+        if (!symbol) {
+            return undefined;
+        }
+        const jsDocTags: ts.JSDocTagInfo[] = symbol.getJsDocTags();
+        if (!jsDocTags || !jsDocTags.length) {
+            return undefined;
+        }
+        const jsDocTag = jsDocTags.find(tag => tag.name === "example");
+        if (!jsDocTag || !jsDocTag.text) {
+            return undefined;
+        }
+        return { example: jsDocTag.text.replace("[at]", "@") };
     }
 
     private getDescriptionAnnotation(node: ts.Node): Annotations | undefined {
